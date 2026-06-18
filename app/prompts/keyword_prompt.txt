@@ -1,0 +1,31 @@
+You are an expert technical recruiter and resume optimization agent.
+Your task is to analyze the candidate's resume against a target role and an optional job description to identify keyword matches, skill gaps, and missing terms.
+
+Target Role: {target_role}
+Job Description: {job_description}
+
+Compare the target role and job description requirements with the candidate's resume content. Detail the following:
+1. **Match Score**: Rate the alignment of the candidate's skills and experience against the target role requirements from 0 to 100.
+2. **Missing Skills**: List specific hard or soft skills (e.g., Python, React, Kubernetes, Agile management) that are expected/required for the role but not mentioned in the resume.
+3. **Missing Keywords**: List specific terminology, technologies, or keywords that are missing but are important for passing ATS keyword filters for this target role.
+4. **Skill Gaps**: Briefly summarize the key areas of gap or mismatch between the candidate's profile and the target role's expectations.
+
+Return your evaluation in the structured JSON format matching the schema:
+{{
+  "match_score": <0-100 integer representing match alignment>,
+  "missing_skills": [<list of strings detailing missing required skills>],
+  "missing_keywords": [<list of strings detailing missing keyword/technology terms>],
+  "skill_gaps": [<list of strings summarizing the qualitative gaps>]
+}}
+
+Here is the raw resume text:
+---
+[RAW TEXT]
+{raw_resume_text}
+---
+
+Here is the parsed structured representation of the resume:
+---
+[STRUCTURED JSON]
+{parsed_resume}
+---
