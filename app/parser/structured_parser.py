@@ -18,21 +18,41 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
-def get_llm(model_name: str = "gemini-2.5-flash", temperature: float = 0.0) -> ChatGoogleGenerativeAI:
+def get_llm(model_name: Optional[str] = None, temperature: float = 0.0) -> Any:
     """
-    Helper function to initialize the Google Gemini LLM using langchain-google-genai.
+    Helper function to initialize the LLM (Gemini or local Ollama) based on environment configuration.
     """
-    api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key:
-        raise ValueError(
-            "GOOGLE_API_KEY is not set. Please set it in your environment or .env file."
-        )
+    provider = os.getenv("LLM_PROVIDER", "gemini").lower()
     
-    return ChatGoogleGenerativeAI(
-        model=model_name,
-        temperature=temperature,
-        google_api_key=api_key,
-    )
+    if provider == "ollama":
+        from langchain_ollama import ChatOllama
+        default_ollama = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+        # Ignore passed model_name if it's a gemini model or none
+        ollama_model = default_ollama
+        if model_name and not model_name.startswith("gemini"):
+            ollama_model = model_name
+            
+        base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        logger.info(f"Initializing local ChatOllama model={ollama_model} base_url={base_url}")
+        return ChatOllama(
+            model=ollama_model,
+            temperature=temperature,
+            base_url=base_url
+        )
+    else:
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "GOOGLE_API_KEY is not set. Please set it in your environment or .env file."
+            )
+        
+        actual_model = model_name if model_name else "gemini-2.5-flash"
+        logger.info(f"Initializing ChatGoogleGenerativeAI model={actual_model}")
+        return ChatGoogleGenerativeAI(
+            model=actual_model,
+            temperature=temperature,
+            google_api_key=api_key,
+        )
 
 def parse_raw_resume_to_structured(
     raw_text: str,

@@ -7,6 +7,7 @@ python-multipart>=0.0.9        # required for file uploads in FastAPI
 langgraph>=0.1.19
 langchain-core>=0.2.22
 langchain-google-genai>=1.0.6  # Gemini integration
+langchain-ollama>=0.1.0        # Ollama integration
 
 # ── LLM ──────────────────────────────────────────────────────────────────────
 google-generativeai>=0.7.2

@@ -29,14 +29,13 @@ def parser_node(state: ResumeState) -> Dict[str, Any]:
     # 1. Extract raw text if path is provided but text is empty
     if not raw_text.strip() and resume_path:
         logger.info(f"Extracting text from: {resume_path}")
-        if resume_path.lower().endswith(".pdf"):
-            from app.parser.pdf_parser import parse_pdf
-            raw_text = parse_pdf(resume_path)
-        elif resume_path.lower().endswith(".docx"):
-            from app.parser.docx_parser import parse_docx
-            raw_text = parse_docx(resume_path)
-        else:
-            logger.warning(f"Unsupported file format for path: {resume_path}")
+        try:
+            from app.parser import parse_resume
+            raw_text = parse_resume(resume_path)
+        except ValueError as ve:
+            logger.warning(str(ve))
+        except Exception as e:
+            logger.error(f"Error parsing resume: {str(e)}")
             
     # 2. Parse structured resume if raw text is available but JSON is empty
     if raw_text.strip() and not parsed_resume:

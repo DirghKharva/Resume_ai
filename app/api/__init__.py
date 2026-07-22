@@ -8,9 +8,8 @@ Responsible for:
 """
 
 from fastapi import APIRouter
+from app.api.resume import router as resume_router
 
 router = APIRouter()
 
-# Routes will be registered here as they are built.
-# Example: from app.api.resume import router as resume_router
-#          router.include_router(resume_router)
+router.include_router(resume_router)
