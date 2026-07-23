@@ -42,3 +42,6 @@ htmlcov/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Third-party MCP servers (cloned locally as dependencies)
+Office-Word-MCP-Server/

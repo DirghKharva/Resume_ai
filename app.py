@@ -121,6 +121,43 @@ st.markdown("""
         border-bottom: 1px solid #333;
         padding-bottom: 0.3rem;
     }
+
+    /* ── Phase 2: Enhancement UI ── */
+    .enhance-card {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border: 1px solid #0f3460;
+        border-radius: 12px;
+        padding: 1.4rem;
+        margin-bottom: 1rem;
+    }
+
+    .question-label {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #E0E0E0;
+        margin-bottom: 0.4rem;
+    }
+
+    .changelog-item {
+        background: #0d2137;
+        border-left: 4px solid #00c9a7;
+        border-radius: 4px;
+        padding: 0.6rem 1rem;
+        margin-bottom: 0.5rem;
+        color: #B2EBE0;
+        font-size: 0.9rem;
+    }
+
+    .enhance-badge {
+        display: inline-block;
+        background: linear-gradient(90deg, #00c9a7 0%, #00b4d8 100%);
+        color: #000;
+        font-weight: 700;
+        font-size: 0.8rem;
+        padding: 0.15rem 0.6rem;
+        border-radius: 20px;
+        margin-bottom: 0.8rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -212,12 +249,25 @@ else:
                     key_res = result.get("keyword_result", {})
                     quest_res = result.get("question_result", {})
                     agg_res = result.get("aggregated_result", {})
-                    
+
                     overall_score = agg_res.get("overall_score", 0)
                     priority_fixes = agg_res.get("priority_fixes", [])
                     dashboard_data = agg_res.get("dashboard_data", {})
-                    
-                    st.success("Analysis complete!")
+
+                    # ── Store everything in session state for Phase 2 ──
+                    st.session_state["analysis_result"] = result
+                    st.session_state["resume_path"] = result.get("resume_path", "")
+                    st.session_state["target_role"] = target_role
+                    st.session_state["job_description"] = job_description or ""
+                    st.session_state["ats_res"] = ats_res
+                    st.session_state["rec_res"] = rec_res
+                    st.session_state["gram_res"] = gram_res
+                    st.session_state["proj_res"] = proj_res
+                    st.session_state["key_res"] = key_res
+                    st.session_state["quest_res"] = quest_res
+                    st.session_state.pop("enhancement_result", None)  # Reset any old enhancement
+
+                    st.success("✅ Analysis complete! Go to the **Interview Prep** tab to answer questions and enhance your resume.")
                     
                     # Metrics Grid Row
                     st.markdown('<div class="section-title">📊 Executive Dashboard Summary</div>', unsafe_allow_html=True)
@@ -410,15 +460,132 @@ else:
                                     st.success("No notable skill gaps identified.")
                                     
                         with tab4:
-                            st.subheader("Intelligent Follow-Up Prep Questions")
-                            st.info("These questions are dynamically generated based on vague metrics or unspecified technologies in your resume. Be ready to answer these in an interview.")
-                            
-                            questions = quest_res.get("questions", [])
-                            if questions:
-                                for idx, q in enumerate(questions, 1):
-                                    st.markdown(f"**{idx}.** {q}")
+                            st.subheader("✨ Resume Enhancement Studio")
+
+                            # ── Check if resume is a DOCX ──
+                            saved_path = st.session_state.get("resume_path", "")
+                            is_docx = saved_path.lower().endswith(".docx")
+
+                            if not is_docx:
+                                st.warning(
+                                    "⚠️ You uploaded a **PDF**. Resume enhancement requires a **.docx (Word)** file. "
+                                    "Please re-upload your resume as a Word document to use this feature."
+                                )
                             else:
-                                st.success("No specific clarifying questions generated. Resume content is detailed and clear!")
+                                st.markdown(
+                                    '<div class="enhance-badge">PHASE 2 — AI Enhancement</div>',
+                                    unsafe_allow_html=True
+                                )
+                                st.markdown(
+                                    "Answer the follow-up questions below. The AI will use your answers to enrich "
+                                    "your experience bullet points and rewrite your resume with specific metrics and outcomes."
+                                )
+
+                                # ── Q&A Section ──
+                                questions = quest_res.get("questions", [])
+                                user_answers = {}
+
+                                if questions:
+                                    st.markdown("### 📝 Answer the Questions")
+                                    for idx, q in enumerate(questions, 1):
+                                        st.markdown(
+                                            f'<div class="enhance-card">'
+                                            f'<div class="question-label">Q{idx}: {q}</div>'
+                                            f'</div>',
+                                            unsafe_allow_html=True
+                                        )
+                                        answer = st.text_area(
+                                            label=f"Your answer to Q{idx}",
+                                            placeholder="e.g. I reduced API response time by 40% using Redis caching on a system handling 10k requests/day.",
+                                            key=f"answer_{idx}",
+                                            label_visibility="collapsed"
+                                        )
+                                        if answer.strip():
+                                            user_answers[q] = answer.strip()
+                                else:
+                                    st.info("No follow-up questions were generated. The AI will enhance your resume based solely on the analysis report.")
+
+                                st.markdown("---")
+
+                                # ── Enhance Button ──
+                                enhance_btn = st.button(
+                                    "✨ Generate Enhanced Resume",
+                                    use_container_width=True,
+                                    type="primary"
+                                )
+
+                                if enhance_btn:
+                                    with st.spinner(
+                                        "🤖 AI Enhancement Agent is editing your resume...\n"
+                                        "This may take 1–3 minutes as the agent reads your document "
+                                        "and applies targeted improvements using Word document tools."
+                                    ):
+                                        try:
+                                            enhance_payload = {
+                                                "resume_path": st.session_state.get("resume_path", ""),
+                                                "target_role": st.session_state.get("target_role", ""),
+                                                "job_description": st.session_state.get("job_description", ""),
+                                                "user_answers": user_answers,
+                                                "parsed_resume": st.session_state.get("analysis_result", {}).get("parsed_resume", {}),
+                                                "ats_result": st.session_state.get("ats_res", {}),
+                                                "recruiter_result": st.session_state.get("rec_res", {}),
+                                                "grammar_result": st.session_state.get("gram_res", {}),
+                                                "project_result": st.session_state.get("proj_res", {}),
+                                                "keyword_result": st.session_state.get("key_res", {}),
+                                            }
+
+                                            enhance_url = f"{api_base_url.rstrip('/')}/api/v1/enhance"
+                                            enhance_resp = requests.post(
+                                                enhance_url,
+                                                json=enhance_payload,
+                                                timeout=300  # 5 min timeout for MCP agent
+                                            )
+
+                                            if enhance_resp.status_code == 200:
+                                                st.session_state["enhancement_result"] = enhance_resp.json()
+                                            else:
+                                                st.error(f"Enhancement failed ({enhance_resp.status_code}): {enhance_resp.text}")
+
+                                        except requests.exceptions.ConnectionError:
+                                            st.error("Could not connect to backend. Is the FastAPI server running?")
+                                        except Exception as e:
+                                            st.error(f"Enhancement error: {str(e)}")
+
+                                # ── Show Enhancement Results ──
+                                enh = st.session_state.get("enhancement_result")
+                                if enh:
+                                    st.success("🎉 Resume enhanced successfully!")
+
+                                    # Changelog
+                                    changes = enh.get("enhancements_made", [])
+                                    if changes:
+                                        st.markdown("### 📋 Enhancements Made")
+                                        for change in changes:
+                                            st.markdown(
+                                                f'<div class="changelog-item">✅ {change}</div>',
+                                                unsafe_allow_html=True
+                                            )
+
+                                    # Agent reasoning log (collapsed)
+                                    agent_log = enh.get("agent_log", [])
+                                    if agent_log:
+                                        with st.expander("🔍 View Agent Tool-Call Log", expanded=False):
+                                            for i, entry in enumerate(agent_log):
+                                                if entry.strip():
+                                                    st.markdown(f"**Step {i+1}:** {entry}")
+
+                                    # Download button
+                                    enhanced_path = enh.get("enhanced_file_path", "")
+                                    if enhanced_path and os.path.exists(enhanced_path):
+                                        with open(enhanced_path, "rb") as f:
+                                            file_bytes = f.read()
+                                        st.download_button(
+                                            label="⬇️ Download Enhanced Resume (.docx)",
+                                            data=file_bytes,
+                                            file_name=os.path.basename(enhanced_path),
+                                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                            use_container_width=True
+                                        )
                                 
                 else:
                     st.error(f"Backend Server Error ({response.status_code}): {response.text}")
